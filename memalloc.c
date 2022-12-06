@@ -33,3 +33,16 @@ header_t  *head, *tail;
 // before any action acquire this lock and after you're done, just release this lock
 pthread_mutex_t global_malloc_lock;
 
+// Check whether any memory blocks of given size are free in the linked list
+// first fit approach used
+header_t *get_free_block(size_t size){
+	header_t *curr = head;
+	while (curr)
+	{
+		if(curr->s.is_free && curr->s.size >= size){
+			return curr;
+			curr = curr->s.next;
+		}
+	}
+	return NULL;
+}
