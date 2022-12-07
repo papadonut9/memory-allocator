@@ -99,3 +99,62 @@ void *malloc(size_t size)
 	// not exposing header to the caller
 	return (void *)(header + 1);
 }
+
+void free(void *block)
+{
+	header_t *header, *tmp;
+	void *programbreak;
+
+	if (!block)
+		return;
+	pthread_mutex_lock(&global_malloc_lock);
+
+	// Casting block to header pointer type and moving it behind by 1
+	// to match the distance to size of the header, in order to
+	// get the header of the block we want to free
+	header = (header_t *)block - 1;
+
+	// sbrk(0) gives the current program break address
+	programbreak = sbrk(0);
+
+	// finding end of current block
+	if ((char *)block + header->s.size == programbreak)
+	{
+		// finding whether the block to be freed is at the end of heap
+		// if it's true, then we can shrink the heap and release memory to OS
+		if (head == tail)
+		{
+			head = tail = NULL;
+		}
+		// If the block is not at end, it is kept but marked as free
+		else
+		{
+			tmp = head;
+			while (tmp)
+			{
+				if (tmp->s.next == tail)
+				{
+					tmp->s.next = NULL;
+					tail = tmp;
+				}
+				tmp = tmp->s.next;
+			}
+		}
+		// adding negative argument to decrement the program break
+		// which results in releasing memory to OS.
+		sbrk(0 - sizeof(header_t) - header->s.size);
+
+		/*
+		/////////////WARNING///////////
+		this lock does not assure thread safety.
+		Since sbrk(), is not thread safe.
+		if a foreign break is found after program break,
+		this may release the memory obtained by foreign sbrk()
+		*/
+		pthread_mutex_unlock(&global_malloc_lock);
+		return;
+	}
+	// setting the memory location's header as free.
+	header->s.is_free = 1;
+	pthread_mutex_unlock(&global_malloc_lock);
+}
