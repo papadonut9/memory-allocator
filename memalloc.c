@@ -158,3 +158,30 @@ void free(void *block)
 	header->s.is_free = 1;
 	pthread_mutex_unlock(&global_malloc_lock);
 }
+
+void *realloc(void *block, size_t size)
+{
+	header_t *header;
+	void *retrn;
+	// getting the block header to see if block has size to
+	// accomodate requested size
+	if (!block || !size)
+		return malloc(size);
+
+	header = (header_t *)block - 1;
+
+	// called if block doesn't have requested memory size
+	if (head->s.size >= size)
+		return block;
+	// fetching block of requested memory size
+	retrn = malloc(size);
+	if (retrn)
+	{
+		// relocate contents to the new bigger block
+		memcpy(retrn, block, header->s.size);
+
+		// free old memory block
+		free(block);
+	}
+	return retrn;
+}
