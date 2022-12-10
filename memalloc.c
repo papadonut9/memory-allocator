@@ -185,3 +185,20 @@ void *realloc(void *block, size_t size)
 	}
 	return retrn;
 }
+
+// printing a debug function
+void print_mem_heap()
+{
+	// debug printing the memory heap
+	header_t *curr = head;
+	printf("head %p, tail = %p \n", (void *)head, (void *)tail);
+
+	// fetching current node's header
+	while (curr)
+	{
+		printf("addr: %p, size: %zu, is_free: %u, next: %p\n",
+			   (void *)curr, curr->s.size, curr->s.is_free, (void *)curr->s.next);
+		// traversing to the next node of the linked list
+		curr = curr->s.next;
+	}
+}
